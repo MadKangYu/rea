@@ -250,7 +250,13 @@ describe("Linux Hopper application leases", () => {
     if (reopened.acquired) await reopened.lease.release();
   });
 
-  it.each(["silent", "malformed", "invalid-pid", "closed"] as const)(
+  it.each([
+    "silent",
+    "malformed",
+    "invalid-pid",
+    "closed",
+    "oversized",
+  ] as const)(
     "keeps a live endpoint when its owner response is %s",
     async (behavior) => {
       const directory = await temporaryDirectory();
@@ -267,6 +273,7 @@ describe("Linux Hopper application leases", () => {
         else if (behavior === "invalid-pid")
           socket.end('{"runId":"existing-owner","processId":-1}\n');
         else if (behavior === "closed") socket.end();
+        else if (behavior === "oversized") socket.write("x".repeat(64 * 1024));
       });
       server.listen(socketPath);
       await once(server, "listening");
@@ -275,7 +282,9 @@ describe("Linux Hopper application leases", () => {
           acquireLinuxHopperApplicationLease({ directory, runId: "new-owner" }),
         ).rejects.toMatchObject({
           _tag: "HopperStartError",
-          userMessage: expect.stringContaining("left unchanged"),
+          userMessage: expect.stringContaining(
+            behavior === "oversized" ? "size limit" : "left unchanged",
+          ),
         });
         expect((await lstat(socketPath)).isSocket()).toBe(true);
         responsive = true;
