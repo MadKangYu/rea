@@ -22,12 +22,13 @@ import {
   downloadHopperPackage,
   HOPPER_DOWNLOAD_BYTES,
 } from "./HopperDownload.js";
+import {
+  HOPPER_DOWNLOAD_PREFIX as DOWNLOAD_PREFIX,
+  HOPPER_RELEASES_URL as RELEASES_URL,
+} from "./HopperReleaseFeed.js";
 import type { HopperInstallFailureReason } from "./SetupInstallFailure.js";
 
 const execFileAsync = promisify(execFile);
-const RELEASES_URL =
-  "https://www.hopperapp.com/include/files-api.php?request=releases&public=true";
-const DOWNLOAD_PREFIX = "https://www.hopperapp.com:443/downloader/public/";
 const HOPPER_PUBLISHER_REQUIREMENT = macDeveloperIdRequirement(
   HOPPER_PUBLISHER.bundleIdentifier,
   HOPPER_PUBLISHER.teamIdentifier,
