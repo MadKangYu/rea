@@ -4,6 +4,7 @@ import type { BrowserObservationOperation } from "../domain/browserObservationEr
 import { sanitizeBrowserUrl } from "../domain/browserObservation.js";
 import { createWebTextArtifact } from "../domain/webContentArtifact.js";
 import { err, ok, type Result } from "../domain/result.js";
+import { MAX_TIMER_DELAY_MS } from "../process/capture/ProcessTimer.js";
 
 export type UnknownRecord = Readonly<Record<string, unknown>>;
 
@@ -122,11 +123,10 @@ export const delayWithCancellation = async (
   operation: BrowserObservationOperation,
   signal?: AbortSignal,
 ): Promise<void> => {
-  const maximumTimerDelay = 2_147_483_647;
   let remaining = durationMs;
   while (remaining > 0) {
     if (signal?.aborted === true) throw new AnalysisCancelledError(operation);
-    const delay = Math.min(remaining, maximumTimerDelay);
+    const delay = Math.min(remaining, MAX_TIMER_DELAY_MS);
     await new Promise<void>((resolve, reject) => {
       const timer = setTimeout(() => {
         signal?.removeEventListener("abort", onAbort);
