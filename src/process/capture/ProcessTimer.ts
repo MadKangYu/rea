@@ -9,6 +9,9 @@ export type ProcessTimerScheduler = (
   delayMs: number,
 ) => ProcessTimer;
 
+/** Node timer ceiling: larger setTimeout delays fire after 1 ms instead. */
+export const MAX_TIMER_DELAY_MS = 2_147_483_647;
+
 const systemTimerScheduler: ProcessTimerScheduler = (callback, delayMs) => {
   const timer = setTimeout(callback, delayMs);
   return { cancel: () => clearTimeout(timer) };
@@ -22,14 +25,13 @@ export const scheduleProcessDelay = (
 ): ProcessTimer => {
   if (!Number.isSafeInteger(delayMs) || delayMs < 0)
     throw new RangeError("Process delay must be a nonnegative safe integer");
-  const maximumTimerDelay = 2_147_483_647;
   let remaining = delayMs;
   let timer: ProcessTimer | undefined;
   let cancelled = false;
 
   const scheduleNext = (): void => {
     if (cancelled) return;
-    const interval = Math.min(remaining, maximumTimerDelay);
+    const interval = Math.min(remaining, MAX_TIMER_DELAY_MS);
     timer = schedule(() => {
       if (cancelled) return;
       remaining -= interval;

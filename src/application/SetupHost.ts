@@ -3,12 +3,10 @@ import {
   retryClientConfigurationCleanup,
 } from "./ClientConfigurationCleanup.js";
 import { access } from "node:fs/promises";
-import { resolve } from "node:path";
 
 import { ArtifactResourceScope } from "../artifacts/ArtifactResourceScope.js";
 import { ArtifactReaderFailure } from "../artifacts/ArtifactReader.js";
 import { ConfigurationError } from "../domain/configurationErrors.js";
-import { PRODUCT_IDENTITY } from "../identity.js";
 import {
   invokingPackageRunner,
   packageRunnerRegistrationCommand,

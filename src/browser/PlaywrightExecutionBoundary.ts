@@ -1,3 +1,4 @@
+import { MAX_TIMER_DELAY_MS } from "../process/capture/ProcessTimer.js";
 import {
   AnalysisCancelledError,
   AnalysisTimeoutError,
@@ -32,7 +33,10 @@ export const withPlaywrightExecutionBoundary = <Value>(
         fail(new AnalysisTimeoutError(OPERATION, timeoutMs ?? 0));
         return;
       }
-      timer = setTimeout(scheduleTimeout, Math.min(remaining, 2_147_483_647));
+      timer = setTimeout(
+        scheduleTimeout,
+        Math.min(remaining, MAX_TIMER_DELAY_MS),
+      );
       timer.unref();
     };
     const cleanup = (): void => {
