@@ -268,6 +268,9 @@ const sendOwner = (socket: Socket, owner: HopperTargetLeaseOwner): void => {
   socket.end(`${JSON.stringify(owner)}\n`);
 };
 
+/** Upper bound for one owner identity line ({runId, processId} JSON). */
+const MAX_OWNER_RESPONSE_LENGTH = 4096;
+
 const readOwner = (
   socketPath: string,
 ): Promise<HopperTargetLeaseOwner | "missing" | "stale"> =>
@@ -300,7 +303,13 @@ const readOwner = (
     socket.on("data", (chunk: Buffer) => {
       response += chunk.toString("utf8");
       const newline = response.indexOf("\n");
-      if (newline < 0) return;
+      if (newline < 0) {
+        // A valid owner identity is a short JSON line; never buffer an
+        // unbounded unterminated response while waiting for the deadline.
+        if (response.length > MAX_OWNER_RESPONSE_LENGTH)
+          fail("owner response exceeded its size limit");
+        return;
+      }
       const parsed = safeParseJson(response.slice(0, newline));
       if (!parsed.ok) {
         fail("malformed owner response");

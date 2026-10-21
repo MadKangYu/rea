@@ -47,4 +47,17 @@ describe("execFileBoundedOutput", () => {
     expect(result.stderr).toContain("error: final conflict");
     expect(result.outputTruncated).toBe(true);
   });
+
+  it("does not split multi-byte characters at the omitted-output boundaries", async () => {
+    // 3-byte characters with an odd limit force both cut points mid-character.
+    const result = await execFileBoundedOutput(
+      process.execPath,
+      ["-e", "process.stdout.write('가'.repeat(100));"],
+      { env: process.env, limit: 31 },
+    );
+    expect(result.outputTruncated).toBe(true);
+    expect(result.stdout).toContain("[output omitted]");
+    expect(result.stdout).not.toContain("\uFFFD");
+    expect(result.stdout).toMatch(/^가+ … \[output omitted\] … 가+$/u);
+  });
 });

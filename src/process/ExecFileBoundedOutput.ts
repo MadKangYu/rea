@@ -69,5 +69,35 @@ const retainedOutput = (
   limit: number,
 ): string =>
   stream.total > limit
-    ? `${stream.head.toString("utf8")} … [output omitted] … ${stream.tail.toString("utf8")}`
+    ? `${withoutTrailingPartialUtf8(stream.head).toString("utf8")} … [output omitted] … ${withoutLeadingUtf8Continuation(stream.tail).toString("utf8")}`
     : Buffer.concat([stream.head, stream.tail]).toString("utf8");
+
+const isUtf8Continuation = (byte: number): boolean => (byte & 0xc0) === 0x80;
+
+/** Drop a multi-byte character that the head byte budget cut short. */
+const withoutTrailingPartialUtf8 = (bytes: Buffer): Buffer => {
+  let start = bytes.length - 1;
+  // A UTF-8 sequence is at most four bytes: one lead and three continuations.
+  while (
+    start >= 0 &&
+    start > bytes.length - 4 &&
+    isUtf8Continuation(bytes[start] ?? 0)
+  )
+    start -= 1;
+  if (start < 0) return bytes;
+  const lead = bytes[start] ?? 0;
+  const expected = lead >= 0xf0 ? 4 : lead >= 0xe0 ? 3 : lead >= 0xc0 ? 2 : 1;
+  return bytes.length - start < expected ? bytes.subarray(0, start) : bytes;
+};
+
+/** Drop continuation bytes whose lead byte fell outside the tail window. */
+const withoutLeadingUtf8Continuation = (bytes: Buffer): Buffer => {
+  let start = 0;
+  while (
+    start < 3 &&
+    start < bytes.length &&
+    isUtf8Continuation(bytes[start] ?? 0)
+  )
+    start += 1;
+  return bytes.subarray(start);
+};
